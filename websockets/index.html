@@ -1,0 +1,100 @@
+<html>
+<head>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 15px;
+        }
+
+        html, body {
+            height: 100%;
+            padding: 10px;
+            margin: 0;
+        }
+
+        div {
+            width: 50%;
+            height: 100%;
+            float: left;
+        }
+
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
+    <script>
+        var websocket = new WebSocket("ws://localhost:8083/users/");
+        websocket.onopen = function (event) {
+            console.log("connection open");
+        };
+        websocket.onclose = function (event) {
+            console.log("connection closed");
+        };
+
+        var counter = 0;
+        websocket.onmessage = function (message) {
+            var userHandle = message.data;
+            if (counter == 100) {
+                counter = 0;
+                console.log("new user: " + userHandle);
+                $("ol").append("<li>" + userHandle + "</li>");
+            } else {
+                counter++;
+            }
+        };
+
+    </script>
+    <script>
+        companiesMentions = {};
+        var companies = [];
+
+        var companiesWS = new WebSocket("ws://localhost:8082/companies/");
+        companiesWS.onopen = function (event) {
+            console.log("companies connection open");
+        };
+        companiesWS.onclose = function (event) {
+            console.log("companies connection closed");
+        };
+        companiesWS.onmessage = function (message) {
+            console.log("received company message: " + message.data);
+            companies = message.data.split(',');
+            $.each(companies, function (index, company) {
+                if (company in companiesMentions) {
+                    companiesMentions[company]++;
+                } else {
+                    companiesMentions[company] = 1;
+                }
+            });
+            var newTable = $('<table class="companies">');
+            $.each(companiesMentions, function (key, value) {
+                newTable.append("<th>" + key + "</th>")
+            });
+            newTable.append("<tr>");
+            $.each(companiesMentions, function (key, value) {
+                newTable.append("<td>" + value + "</td>")
+            });
+            newTable.append("<tr>");
+            $('table.companies').replaceWith(newTable);
+        };
+    </script>
+</head>
+
+<body>
+<div>
+    <h2>Users</h2>
+    <ol>
+        <li>user1</li>
+    </ol>
+</div>
+<div>
+    <h2>Companies</h2>
+    <table border="1" class = "companies">
+        <tr>
+            <td>company</td>
+        </tr>
+    </table>
+</div>
+</body>
+</html>
